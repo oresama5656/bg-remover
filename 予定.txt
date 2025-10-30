@@ -1,0 +1,11 @@
+③ 2段階処理（最も確実）
+
+1回目で深い青を除去 → 2回目で薄い青を除去。
+
+node bg-remover-cli.js --mode color --target-color "50,100,170" --threshold 80 --input ./input --output ./output1
+node bg-remover-cli.js --mode color --target-color "100,160,210" --threshold 70 --input ./output1 --output ./output2
+
+
+結果：上下の青空がほぼ完全に消える。
+
+これ実装するか
