@@ -27,6 +27,7 @@
     "@imgly/background-removal-node": "^1.4.5",
     "archiver": "^7.0.1",
     "jimp": "^0.22.12",
+    "sharp": "^0.34.4",
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {

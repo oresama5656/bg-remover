@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背景透過ツール - コマンド生成GUI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .mode-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .mode-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .mode-card.active {
+            border-color: #667eea;
+            background: #f8f9ff;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .mode-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .mode-card p {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .options-panel {
+            display: none;
+            background: #f8f9ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .options-panel.active {
+            display: block;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .option-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .option-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .option-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .color-pass-entry {
+            display: grid;
+            grid-template-columns: 3fr 2fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .command-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.95em;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .copy-btn.copied {
+            background: #48bb78;
+        }
+
+        .steps {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        .steps ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .steps li {
+            margin-bottom: 8px;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 8px 15px;
+            background: #e8f4fd;
+            color: #1976d2;
+            border: 1px solid #1976d2;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: #1976d2;
+            color: white;
+        }
+
+        .path-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .path-info code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 背景透過ツール</h1>
+            <p>コマンド生成GUI - 設定してコピー＆実行</p>
+        </div>
+
+        <div class="content">
+            <!-- モード選択 -->
+            <div class="section">
+                <h2 class="section-title">1. 処理モードを選択</h2>
+                <div class="mode-selector">
+                    <div class="mode-card" data-mode="multipass">
+                        <h3>🔄 マルチパス</h3>
+                        <p>推奨！複数色を段階削除</p>
+                    </div>
+                    <div class="mode-card" data-mode="color">
+                        <h3>🎨 カラー</h3>
+                        <p>単色背景削除</p>
+                    </div>
+                    <div class="mode-card" data-mode="hybrid">
+                        <h3>✨ ハイブリッド</h3>
+                        <p>人物+文字保持</p>
+                    </div>
+                    <div class="mode-card" data-mode="ai">
+                        <h3>🤖 AI</h3>
+                        <p>自動検出</p>
+                    </div>
+                </div>
+
+                <!-- マルチパスオプション -->
+                <div class="options-panel" id="multipassOptions">
+                    <div class="option-group">
+                        <label class="option-label">プリセット</label>
+                        <div class="preset-buttons">
+                            <button class="preset-btn" onclick="applyPreset('blue')">青空</button>
+                            <button class="preset-btn" onclick="applyPreset('green')">グリーンバック</button>
+                            <button class="preset-btn" onclick="applyPreset('white')">白背景</button>
+                            <button class="preset-btn" onclick="applyPreset('custom')">カスタム</button>
+                        </div>
+                    </div>
+                    <div class="option-group">
+                        <label class="option-label">カラーパス設定</label>
+                        <div id="passesContainer">
+                            <div class="color-pass-entry">
+                                <input type="text" class="pass-color" placeholder="R,G,B (例: 50,100,170)" value="50,100,170">
+                                <input type="number" class="pass-threshold" placeholder="閾値" value="80" min="0" max="441">
+                                <button class="btn btn-secondary btn-small" onclick="removePass(this)">削除</button>
+                            </div>
+                            <div class="color-pass-entry">
+                                <input type="text" class="pass-color" placeholder="R,G,B" value="100,160,210">
+                                <input type="number" class="pass-threshold" placeholder="閾値" value="70" min="0" max="441">
+                                <button class="btn btn-secondary btn-small" onclick="removePass(this)">削除</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-small" id="addPassBtn">+ パスを追加</button>
+                        <p class="help-text">深い色→薄い色の順で設定すると効果的</p>
+                    </div>
+                </div>
+
+                <!-- カラーオプション -->
+                <div class="options-panel" id="colorOptions">
+                    <div class="option-group">
+                        <label class="option-label">ターゲットカラー (RGB)</label>
+                        <input type="text" class="option-input" id="targetColor" value="100,160,210" placeholder="例: 0,0,255">
+                        <p class="help-text">削除したい色をRGB形式で入力</p>
+                    </div>
+                    <div class="option-group">
+                        <label class="option-label">閾値 (0-441)</label>
+                        <input type="number" class="option-input" id="threshold" value="70" min="0" max="441">
+                        <p class="help-text">大きいほど広範囲を削除 (推奨: 50-80)</p>
+                    </div>
+                </div>
+
+                <!-- ハイブリッドオプション -->
+                <div class="options-panel" id="hybridOptions">
+                    <div class="option-group">
+                        <label class="option-label">文字色 (RGB)</label>
+                        <input type="text" class="option-input" id="textColor" value="255,255,255">
+                        <p class="help-text">保持したい文字の色 (デフォルト: 白)</p>
+                    </div>
+                    <div class="option-group">
+                        <label class="option-label">文字検出閾値 (0-255)</label>
+                        <input type="number" class="option-input" id="textThreshold" value="60" min="0" max="255">
+                    </div>
+                </div>
+            </div>
+
+            <!-- パス設定 -->
+            <div class="section">
+                <h2 class="section-title">2. フォルダパス（任意）</h2>
+                <div class="path-info">
+                    <p><strong>入力フォルダ:</strong> <code>./input</code> (デフォルト)</p>
+                    <p><strong>出力フォルダ:</strong> <code>./output</code> (デフォルト)</p>
+                    <p class="help-text" style="margin-top:10px">変更する場合は生成されたコマンドを手動で編集してください</p>
+                </div>
+            </div>
+
+            <!-- コマンド生成 -->
+            <div class="section">
+                <h2 class="section-title">3. 生成されたコマンド</h2>
+                <div class="command-output" id="commandOutput">
+                    <button class="copy-btn" id="copyBtn">コピー</button>
+                    <span id="commandText">モードを選択してください</span>
+                </div>
+
+                <div class="steps">
+                    <strong>📋 使い方</strong>
+                    <ol>
+                        <li>上のコマンドをコピー</li>
+                        <li>コマンドプロンプト（またはターミナル）を開く</li>
+                        <li><code>cd d:\bg-remover</code> でディレクトリ移動</li>
+                        <li>コマンドを貼り付けて実行</li>
+                        <li>outputフォルダに結果が保存されます</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedMode = null;
+
+        // 要素取得
+        const modeCards = document.querySelectorAll('.mode-card');
+        const commandOutput = document.getElementById('commandOutput');
+        const commandText = document.getElementById('commandText');
+        const copyBtn = document.getElementById('copyBtn');
+
+        // モードカードクリック
+        modeCards.forEach(card => {
+            card.addEventListener('click', () => {
+                modeCards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                selectedMode = card.dataset.mode;
+
+                // オプションパネル表示
+                document.querySelectorAll('.options-panel').forEach(p => p.classList.remove('active'));
+                const optionsId = selectedMode + 'Options';
+                const optionsPanel = document.getElementById(optionsId);
+                if (optionsPanel) optionsPanel.classList.add('active');
+
+                generateCommand();
+            });
+        });
+
+        // パス追加
+        document.getElementById('addPassBtn').addEventListener('click', () => {
+            const container = document.getElementById('passesContainer');
+            const entry = document.createElement('div');
+            entry.className = 'color-pass-entry';
+            entry.innerHTML = `
+                <input type="text" class="pass-color" placeholder="R,G,B">
+                <input type="number" class="pass-threshold" placeholder="閾値" value="50" min="0" max="441">
+                <button class="btn btn-secondary btn-small" onclick="removePass(this)">削除</button>
+            `;
+            container.appendChild(entry);
+            generateCommand();
+        });
+
+        function removePass(btn) {
+            btn.parentElement.remove();
+            generateCommand();
+        }
+
+        // プリセット適用
+        function applyPreset(type) {
+            const container = document.getElementById('passesContainer');
+            container.innerHTML = '';
+
+            let presets = [];
+            if (type === 'blue') {
+                presets = [
+                    {color: '50,100,170', threshold: '80'},
+                    {color: '100,160,210', threshold: '70'}
+                ];
+            } else if (type === 'green') {
+                presets = [
+                    {color: '0,150,0', threshold: '60'},
+                    {color: '0,255,0', threshold: '50'}
+                ];
+            } else if (type === 'white') {
+                presets = [
+                    {color: '200,200,200', threshold: '50'},
+                    {color: '240,240,240', threshold: '30'}
+                ];
+            } else {
+                presets = [
+                    {color: '', threshold: '50'}
+                ];
+            }
+
+            presets.forEach(preset => {
+                const entry = document.createElement('div');
+                entry.className = 'color-pass-entry';
+                entry.innerHTML = `
+                    <input type="text" class="pass-color" placeholder="R,G,B" value="${preset.color}">
+                    <input type="number" class="pass-threshold" placeholder="閾値" value="${preset.threshold}" min="0" max="441">
+                    <button class="btn btn-secondary btn-small" onclick="removePass(this)">削除</button>
+                `;
+                container.appendChild(entry);
+            });
+
+            generateCommand();
+        }
+
+        // 入力変更時にコマンド更新
+        document.addEventListener('input', (e) => {
+            if (e.target.matches('.option-input, .pass-color, .pass-threshold')) {
+                generateCommand();
+            }
+        });
+
+        // コマンド生成
+        function generateCommand() {
+            if (!selectedMode) {
+                commandText.textContent = 'モードを選択してください';
+                return;
+            }
+
+            let cmd = 'node bg-remover-cli.js';
+
+            if (selectedMode === 'multipass') {
+                const passes = [];
+                document.querySelectorAll('.color-pass-entry').forEach(entry => {
+                    const color = entry.querySelector('.pass-color').value.trim();
+                    const threshold = entry.querySelector('.pass-threshold').value;
+                    if (color && threshold) {
+                        passes.push(`${color},${threshold}`);
+                    }
+                });
+
+                if (passes.length > 0) {
+                    cmd += ` --mode color --color-passes "${passes.join(';')}"`;
+                } else {
+                    cmd += ' --mode color --color-passes "50,100,170,80;100,160,210,70"';
+                }
+
+            } else if (selectedMode === 'color') {
+                const targetColor = document.getElementById('targetColor').value.trim();
+                const threshold = document.getElementById('threshold').value;
+                cmd += ` --mode color --target-color "${targetColor}" --threshold ${threshold}`;
+
+            } else if (selectedMode === 'hybrid') {
+                const textColor = document.getElementById('textColor').value.trim();
+                const textThreshold = document.getElementById('textThreshold').value;
+                cmd += ` --mode hybrid --text-colors "${textColor}" --text-threshold ${textThreshold}`;
+
+            } else if (selectedMode === 'ai') {
+                cmd += ' --mode ai';
+            }
+
+            commandText.textContent = cmd;
+        }
+
+        // コピー機能
+        copyBtn.addEventListener('click', () => {
+            const cmd = commandText.textContent;
+            navigator.clipboard.writeText(cmd).then(() => {
+                copyBtn.textContent = 'コピーしました！';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = 'コピー';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        // 初期状態: マルチパスモードを選択
+        modeCards[0].click();
+    </script>
+</body>
+</html>

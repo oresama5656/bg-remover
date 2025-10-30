@@ -37,6 +37,7 @@ function parseArgs() {
         targetColor: null,       // RGB string: "r,g,b"
         threshold: 50,           // Default threshold
         feather: 0,              // Default no feathering
+        colorPasses: null,       // Multi-pass: "r1,g1,b1,t1;r2,g2,b2,t2"
 
         // Hybrid mode options
         textPadding: 5,          // Padding around detected text regions
@@ -68,6 +69,8 @@ function parseArgs() {
             options.threshold = parseInt(args[++i], 10);
         } else if (arg === '--feather') {
             options.feather = parseInt(args[++i], 10);
+        } else if (arg === '--color-passes') {
+            options.colorPasses = args[++i];
         }
         // Hybrid mode options
         else if (arg === '--text-padding') {
@@ -92,9 +95,10 @@ function parseArgs() {
     }
 
     // Validate color mode requirements
-    if (options.mode === 'color' && !options.targetColor) {
-        console.error(`${colors.red}Error: --target-color required for color mode${colors.reset}`);
+    if (options.mode === 'color' && !options.targetColor && !options.colorPasses) {
+        console.error(`${colors.red}Error: --target-color or --color-passes required for color mode${colors.reset}`);
         console.error(`${colors.yellow}Example: --target-color "0,0,255" (blue)${colors.reset}`);
+        console.error(`${colors.yellow}Or: --color-passes "50,100,170,80;100,160,210,70"${colors.reset}`);
         process.exit(1);
     }
 
@@ -127,6 +131,27 @@ function parseArgs() {
             return parts;
         });
         options.textColorsParsed = colors;
+    }
+
+    // Parse multi-pass color removal
+    if (options.colorPasses) {
+        const passes = options.colorPasses.split(';').map(passStr => {
+            const parts = passStr.split(',').map(s => parseInt(s.trim(), 10));
+            if (parts.length !== 4 || parts.some(v => isNaN(v))) {
+                console.error(`${colors.red}Error: Invalid color pass format '${passStr}'${colors.reset}`);
+                console.error(`${colors.yellow}Use format: "r,g,b,threshold" (e.g., "50,100,170,80;100,160,210,70")${colors.reset}`);
+                process.exit(1);
+            }
+            if (parts.slice(0, 3).some(v => v < 0 || v > 255)) {
+                console.error(`${colors.red}Error: RGB values must be 0-255${colors.reset}`);
+                process.exit(1);
+            }
+            return {
+                color: { r: parts[0], g: parts[1], b: parts[2] },
+                threshold: parts[3]
+            };
+        });
+        options.colorPassesParsed = passes;
     }
 
     return options;
@@ -172,6 +197,9 @@ ${colors.cyan}OPTIONS:${colors.reset}
   -t, --threshold <num>       Color similarity threshold 0-441 (default: 50)
                               Lower = more precise, Higher = more removal
   --feather <num>             Edge feathering in pixels (default: 0)
+  --color-passes <passes>     Multi-pass color removal (color mode only)
+                              Format: "r1,g1,b1,t1;r2,g2,b2,t2;..."
+                              Example: "50,100,170,80;100,160,210,70"
 
   ${colors.bright}Hybrid Mode Options:${colors.reset}
   --text-padding <num>        Padding around text regions (default: 5)
@@ -198,6 +226,9 @@ ${colors.cyan}EXAMPLES:${colors.reset}
 
   ${colors.gray}# Color mode - remove blue background${colors.reset}
   node bg-remover-cli.js --mode color --target-color "0,0,255" --threshold 50
+
+  ${colors.gray}# Color mode - multi-pass (deep blue → light blue)${colors.reset}
+  node bg-remover-cli.js --mode color --color-passes "50,100,170,80;100,160,210,70"
 
   ${colors.gray}# Color mode - remove green screen with feathering${colors.reset}
   node bg-remover-cli.js --mode color --target-color "0,255,0" --threshold 30 --feather 2
@@ -367,6 +398,7 @@ async function main() {
         targetColor: options.targetColorParsed,
         threshold: options.threshold,
         feather: options.feather,
+        colorPasses: options.colorPassesParsed,
         textPadding: options.textPadding,
         textDetectionMode: options.textDetectionMode,
         textColors: options.textColorsParsed || [[255, 255, 255]],

@@ -23,6 +23,7 @@ class BackgroundRemoverCore {
         this.targetColor = options.targetColor || null;  // {r, g, b}
         this.threshold = options.threshold || 50;
         this.feather = options.feather || 0;
+        this.colorPasses = options.colorPasses || null;  // Array of {color, threshold} for multi-pass
 
         // Hybrid mode options
         this.textPadding = options.textPadding || 5;  // Padding around text regions
@@ -134,14 +135,68 @@ class BackgroundRemoverCore {
                 throw new Error(`Input file not found: ${inputPath}`);
             }
 
-            if (!this.targetColor) {
-                throw new Error('Target color not specified. Use --target-color option.');
-            }
-
             // Check if INPUT file format is supported
             const inputExt = path.extname(inputPath).toLowerCase();
             if (!this.supportedFormats.includes(inputExt)) {
                 throw new Error(`Unsupported file format: ${inputExt}`);
+            }
+
+            // Multi-pass mode
+            if (this.colorPasses && this.colorPasses.length > 0) {
+                this.log(`Processing (multi-pass color mode): ${path.basename(inputPath)}`);
+                this.log(`Total passes: ${this.colorPasses.length}`);
+
+                // Load image with jimp
+                let image = await Jimp.read(inputPath);
+                const width = image.bitmap.width;
+                const height = image.bitmap.height;
+
+                // Apply each pass
+                for (let i = 0; i < this.colorPasses.length; i++) {
+                    const pass = this.colorPasses[i];
+                    this.log(`Pass ${i + 1}/${this.colorPasses.length}: RGB(${pass.color.r}, ${pass.color.g}, ${pass.color.b}), threshold=${pass.threshold}`);
+
+                    let pixelsChanged = 0;
+
+                    // Process each pixel
+                    image.scan(0, 0, width, height, (x, y, idx) => {
+                        const r = image.bitmap.data[idx + 0];
+                        const g = image.bitmap.data[idx + 1];
+                        const b = image.bitmap.data[idx + 2];
+                        const a = image.bitmap.data[idx + 3];
+
+                        // Skip already transparent pixels
+                        if (a === 0) return;
+
+                        // Calculate color distance
+                        const distance = this.calculateColorDistance(
+                            { r, g, b },
+                            pass.color
+                        );
+
+                        // If within threshold, make transparent
+                        if (distance <= pass.threshold) {
+                            image.bitmap.data[idx + 3] = 0;
+                            pixelsChanged++;
+                        }
+                    });
+
+                    this.log(`  Pixels made transparent: ${pixelsChanged} (${(pixelsChanged / (width * height) * 100).toFixed(1)}%)`);
+                }
+
+                // Ensure output directory exists
+                await fs.mkdir(path.dirname(outputPath), { recursive: true });
+
+                // Save as PNG with transparency
+                await image.writeAsync(outputPath);
+
+                this.log(`Saved: ${path.basename(outputPath)}`);
+                return true;
+            }
+
+            // Single-pass mode (original behavior)
+            if (!this.targetColor) {
+                throw new Error('Target color not specified. Use --target-color option.');
             }
 
             this.log(`Processing (color mode): ${path.basename(inputPath)}`);
