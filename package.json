@@ -1,0 +1,42 @@
+{
+  "name": "bg-remover",
+  "version": "1.0.0",
+  "description": "AI-powered background removal CLI tool for batch processing with ZIP output support",
+  "main": "bg-remover-cli.js",
+  "scripts": {
+    "start": "node bg-remover-cli.js",
+    "cli": "node bg-remover-cli.js",
+    "test": "node bg-remover-cli.js --input ./examples/input --output ./examples/output",
+    "pkg": "pkg bg-remover-cli.js --targets node18-win-x64 --output bg-remover.exe"
+  },
+  "keywords": [
+    "background-removal",
+    "ai",
+    "image-processing",
+    "nodejs",
+    "batch-processing",
+    "cli",
+    "webp",
+    "png",
+    "zip",
+    "line-stamp"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@imgly/background-removal-node": "^1.4.5",
+    "archiver": "^7.0.1",
+    "jimp": "^0.22.12",
+    "tesseract.js": "^6.0.1"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/bg-remover"
+  }
+}
